@@ -7,6 +7,7 @@ class LoginProfile(models.Model):
     name = models.CharField(max_length=100)
     company = models.CharField(max_length=100)
     designation = models.CharField(max_length=100)
+    view_time_minutes = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

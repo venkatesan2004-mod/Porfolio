@@ -28,7 +28,8 @@ def loginprofile(request):
     profile = LoginProfile.objects.create(
         name=data.get("name"),
         company=data.get("company"),
-        designation=data.get("designation")
+        designation=data.get("designation"),
+        view_time_minutes = data.get("view_time_minutes")
     )
 
     return JsonResponse({
@@ -257,3 +258,177 @@ def profile(request):
             "pg_years": profile.pg_years,
             "photo": profile.photo_base64()
         })
+
+@csrf_exempt
+@require_http_methods(['GET'])
+def all_profiles_json(request):
+    # Get all profiles
+    profiles = LoginProfile.objects.all()
+
+    # Convert queryset to list of dictionaries
+    data = list(profiles.values("id", "name", "company", "designation","view_time_minutes", "created_at"))
+
+    return JsonResponse({"profiles": data}, safe=False)
+
+
+@api_view(['POST'])
+def enquiry(request):
+    try:
+        req_type = request.data.get("type")
+
+        name = request.data.get("name")
+        phone = request.data.get("phone")
+        email = request.data.get("email")
+
+        uploaded_file = request.FILES.get("file")
+
+        # Convert file to binary (for BinaryField)
+        file_data = None
+        if uploaded_file:
+            file_data = uploaded_file.read()
+
+        # 🔹 HIRE REQUEST
+        if req_type == "hire":
+            message = request.data.get("message")
+
+            HireRequest.objects.create(
+                name=name,
+                phone=phone,
+                email=email,
+                message=message,
+                document=file_data
+            )
+
+            return Response(
+                {"message": "Hire request saved successfully"},
+                status=status.HTTP_201_CREATED
+            )
+
+        # 🔹 PROJECT REQUEST
+        elif req_type == "project":
+            project_title = request.data.get("projectTitle")
+            requirement = request.data.get("requirement")
+
+            ProjectRequest.objects.create(
+                name=name,
+                phone=phone,
+                email=email,
+                project_title=project_title,
+                requirement=requirement,
+                document=file_data
+            )
+
+            return Response(
+                {"message": "Project request saved successfully"},
+                status=status.HTTP_201_CREATED
+            )
+
+        else:
+            return Response(
+                {"error": "Invalid request type"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    except Exception as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )    
+
+
+@api_view(['GET'])
+def get_enquiries(request):
+    req_type = request.GET.get("type")  # hire / project
+
+    # 🔹 HIRE DATA
+    if req_type == "hire":
+        data = HireRequest.objects.all().order_by("-created_at")
+
+        result = [
+            {
+                "id": i.id,
+                "name": i.name,
+                "phone": i.phone,
+                "email": i.email,
+                "message": i.message,
+                "created_at": i.created_at,
+                "has_document": True if i.document else False
+            }
+            for i in data
+        ]
+
+        return Response(result)
+
+    # 🔹 PROJECT DATA
+    elif req_type == "project":
+        data = ProjectRequest.objects.all().order_by("-created_at")
+
+        result = [
+            {
+                "id": i.id,
+                "name": i.name,
+                "phone": i.phone,
+                "email": i.email,
+                "project_title": i.project_title,
+                "requirement": i.requirement,
+                "created_at": i.created_at,
+                "has_document": True if i.document else False
+            }
+            for i in data
+        ]
+
+        return Response(result)
+
+    # 🔹 BOTH
+    else:
+        hire_data = HireRequest.objects.all().order_by("-created_at")
+        project_data = ProjectRequest.objects.all().order_by("-created_at")
+
+        return Response({
+            "hire": [
+                {
+                    "id": i.id,
+                    "name": i.name,
+                    "phone": i.phone,
+                    "email": i.email,
+                    "message": i.message,
+                    "created_at": i.created_at
+                }
+                for i in hire_data
+            ],
+            "project": [
+                {
+                    "id": i.id,
+                    "name": i.name,
+                    "phone": i.phone,
+                    "email": i.email,
+                    "project_title": i.project_title,
+                    "requirement": i.requirement,
+                    "created_at": i.created_at
+                }
+                for i in project_data
+            ]
+        })        
+    
+
+
+def view_document(request, req_type, id):
+    try:
+        if req_type == "hire":
+            obj = HireRequest.objects.get(id=id)
+        elif req_type == "project":
+            obj = ProjectRequest.objects.get(id=id)
+        else:
+            return HttpResponse("Invalid type", status=400)
+
+        if not obj.document:
+            return HttpResponse("No document found", status=404)
+
+        # 👇 IMPORTANT: set proper content type
+        response = HttpResponse(obj.document, content_type="application/pdf")
+        response['Content-Disposition'] = f'inline; filename="document_{id}.pdf"'
+
+        return response
+
+    except Exception as e:
+        return HttpResponse(str(e), status=500)

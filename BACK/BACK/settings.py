@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-4m&p*z@89l%y_$1qzfjnd#+6enai&^vseyyn#d+i&u_*k+2h!+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['venkatesan.pythonanywhere.com']
 
 CORS_ALLOW_ALL_ORIGINS = True
 
@@ -73,7 +73,7 @@ ROOT_URLCONF = 'BACK.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / "frontend"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -133,8 +133,19 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+#STATIC_URL = 'static/'
 
+STATIC_URL = '/static/'
+
+STATIC_ROOT = '/home/venkatesan/Backend/Porfolio/BACK/staticfiles'
+
+#STATICFILES_DIRS = [
+ #   '/home/venkatesan/Backend/Porfolio/BACK/static'
+#]
+
+STATICFILES_DIRS = [
+    BASE_DIR / "frontend/static"
+]
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 

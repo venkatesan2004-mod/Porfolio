@@ -11,4 +11,8 @@ urlpatterns = [
        path('projects/', project_list_create, name='project-list-create'),
     path('projects/<int:pk>/', project_detail, name='project-detail'),
      path("profile/", profile, name="profile-api"),
+    path("api/enquiry", enquiry, name="enquiry"),
+    path('api/profiles/', all_profiles_json, name='all_profiles_json'),
+    path("api/enquiries/", get_enquiries, name="get_enquiries"),
+    path("api/document/<str:req_type>/<int:id>/", view_document,name='view_document'),
 ]
